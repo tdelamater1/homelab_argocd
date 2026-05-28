@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/tdelamater1/homelab_argoscd.git
+    repoURL: https://github.com/tdelamater1/homelab_argocd.git
     path: k8s
     targetRevision: HEAD
     directory:
