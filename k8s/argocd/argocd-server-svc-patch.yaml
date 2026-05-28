@@ -1,3 +1,6 @@
+# Patch to expose ArgoCD UI via MetalLB LoadBalancer IP.
+# Apply with kubectl patch, not kubectl apply:
+#   kubectl patch svc argocd-server -n argocd --patch-file k8s/argocd/argocd-server-svc-patch.yaml
 apiVersion: v1
 kind: Service
 metadata:
