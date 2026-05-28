@@ -1,0 +1,10 @@
+# Secrets - never commit these
+*.secret.yaml
+*-secret.yaml
+secrets/
+.env
+
+# Editor
+.idea/
+.vscode/
+*.swp
