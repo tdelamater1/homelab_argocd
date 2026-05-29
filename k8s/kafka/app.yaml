@@ -9,6 +9,8 @@ spec:
     repoURL: https://github.com/tdelamater1/homelab_argocd.git
     path: k8s/kafka
     targetRevision: HEAD
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: kafka
