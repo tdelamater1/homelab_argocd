@@ -1,0 +1,60 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb
+  namespace: mongodb
+  annotations:
+    # The CRD is installed by the mongodb-operator app (separate ArgoCD Application).
+    # This lets the first sync proceed even if the CRD isn't registered yet; ArgoCD
+    # retries/self-heals until the operator's CRD exists.
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  # Single-node replica set: members=1 still gives a real replica set (replSet name =
+  # this resource's name, "mongodb"), which is what change streams require.
+  members: 1
+  type: ReplicaSet
+  # Must be a published tag of quay.io/mongodb/mongodb-community-server. Matches the
+  # version used by the previous standalone box; verify/adjust if the tag isn't found.
+  version: "7.0.4"
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    # Single application user: read/write the `wikipedia` DB (covers find + changeStream,
+    # so it serves both the Kafka Streams writers and the Go change-stream reader).
+    - name: wikipedia
+      db: admin
+      passwordSecretRef:
+        # This Secret is NOT in git — create it manually (see README.md). Keeping it out
+        # of the synced path prevents selfHeal from clobbering the real password.
+        name: wikipedia-db-password
+      roles:
+        - name: readWrite
+          db: wikipedia
+        - name: clusterMonitor   # lets Compass show server/replica-set status
+          db: admin
+      scramCredentialsSecretName: wikipedia-scram
+      # Predictable name for the operator-generated connection-string secret (keys:
+      # connectionString.standard, connectionString.standardSrv, username, password).
+      connectionStringSecretName: wikipedia-mongodb-connection
+  statefulSet:
+    spec:
+      # Pin storage on the k3s default StorageClass. Both PVC templates the operator uses
+      # (data-volume, logs-volume) must be listed or the list override drops one.
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: local-path
+            resources:
+              requests:
+                storage: 10Gi
+        - metadata:
+            name: logs-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: local-path
+            resources:
+              requests:
+                storage: 2Gi

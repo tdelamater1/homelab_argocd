@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mongodb-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://mongodb.github.io/helm-charts
+    chart: community-operator
+    # "*" tracks the latest chart (matches the strimzi app convention). For a durable
+    # store, after the first sync run `helm search repo mongodb/community-operator` and
+    # pin targetRevision to the resolved version to avoid surprise operator upgrades.
+    targetRevision: "*"
+    helm:
+      values: |
+        # Operator watches only its own namespace (namespaced RBAC).
+        operator:
+          watchNamespace: mongodb
+        # We manage the MongoDBCommunity CR ourselves (see k8s/mongodb), so the chart
+        # must NOT create its own sample resource.
+        createResource: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mongodb
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # CRDs carry large annotations; server-side apply avoids the apply size limit.
+      - ServerSideApply=true
